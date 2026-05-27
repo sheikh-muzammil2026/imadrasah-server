@@ -33,6 +33,7 @@ async function run() {
     // Send a ping to confirm a successful connection
     const database = client.db("imadrasah");
     const coursesCollection = database.collection("courses");
+    const enrolledCollection = database.collection("enrolled");
 
     app.get('/courses', async(req, res)=>{
         try {
@@ -60,6 +61,27 @@ async function run() {
             
         }
     })
+
+    app.post('/enrolled-courses',async (req, res) =>{
+      try {
+        const enrolledCourses = await req.body;
+        const result = await enrolledCollection.insertOne(enrolledCourses);
+        res.json(result)
+      } catch (error) {
+        console.log(error, "enrolled post time catching error")
+      }
+    })
+
+      app.get('/enrolled-courses', async(req, res)=>{
+        try {
+          const cursor = await enrolledCollection.find()
+          const enrolledCourses = await cursor.toArray()
+          res.send(enrolledCourses)
+          
+        } catch (error) {
+          console.log(error.message)
+        }
+      })
 
 
     await client.db("admin").command({ ping: 1 });
