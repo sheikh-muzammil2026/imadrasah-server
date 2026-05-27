@@ -29,11 +29,12 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
     const database = client.db("imadrasah");
     const coursesCollection = database.collection("courses");
     const enrolledCollection = database.collection("enrolled");
+    const admissionCollection = database.collection("admissions");
 
     app.get('/courses', async(req, res)=>{
         try {
@@ -83,8 +84,21 @@ async function run() {
         }
       })
 
+      app.post('/admissions', async(req, res)=>{
+        try {
 
-    await client.db("admin").command({ ping: 1 });
+          const admitedData = req.body;
+          const result = await admissionCollection.insertOne(admitedData);
+          res.json(result)
+          
+        } catch (error) {
+          console.log(error)
+          
+        }
+      })
+
+
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
