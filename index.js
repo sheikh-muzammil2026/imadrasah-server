@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
     // Send a ping to confirm a successful connection
     const database = client.db("imadrasah");
     const coursesCollection = database.collection("courses");
@@ -73,11 +73,17 @@ async function run() {
       }
     })
 
-      app.get('/enrolled-courses', async(req, res)=>{
+      app.get('/enrolled-courses/:userId', async(req, res)=>{
         try {
-          const cursor = await enrolledCollection.find()
+          const userId = req.params.userId;
+          const query = {userId: userId}
+//                         ▲        ▲
+//                         │        │
+//                 ডাটাবেজের ফিল্ডের নাম     প্যারামস থেকে পাওয়া ভ্যারিয়েবলের মান
+
+          const cursor = await enrolledCollection.find(query)
           const enrolledCourses = await cursor.toArray()
-          res.send(enrolledCourses)
+          res.json(enrolledCourses)
           
         } catch (error) {
           console.log(error.message)
@@ -98,7 +104,7 @@ async function run() {
       })
 
 
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
@@ -111,3 +117,11 @@ run().catch(console.dir);
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
+
+
+/**
+ * enrolled course dekhar jonno client side theke call korar somoy user id soho fetch korbe. 
+ * server side e client theke asa use id reieve kore sei id er sathe mongodb er moddhe thakar use id milaabe.
+ * mongodb userId and clien req er userId miliye ze data asbe, setai res.json() kore pathiye dibe. 
+ * 
+ * */ 
