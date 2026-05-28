@@ -35,7 +35,7 @@ async function run() {
     const coursesCollection = database.collection("courses");
     const enrolledCollection = database.collection("enrolled");
     const admissionCollection = database.collection("admissions");
-     const myAddedCOursesCollection = database.collection("addedCourses");
+    const myAddedCOursesCollection = database.collection("addedCourses");
 
     app.get('/courses', async(req, res)=>{
         try {
@@ -145,6 +145,18 @@ async function run() {
           
         } catch (error) {
           console.log(error);
+        }
+      })
+
+      app.delete('/enrolled-courses/:courseId', async(req, res)=>{
+        try {
+          const courseId = req.params.courseId;
+          const query = {_id: new ObjectId(courseId) }
+          const result = await enrolledCollection.deleteOne(query)
+          res.json(result)
+          
+        } catch (error) {
+          console.log(error, "from deleting enrolled-courses");
         }
       })
 
