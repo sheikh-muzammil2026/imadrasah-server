@@ -172,6 +172,27 @@ async function run() {
         }
       })
      
+      app.patch('/my-added-courses/:courseId', async(req, res) =>{
+        try {
+          const courseId = req.params.courseId;
+          const query = {_id: new ObjectId(courseId)}
+          const modifyedData = req.body;
+          const updateDocuments = {
+            $set: {
+              title: modifyedData.title,
+              level: modifyedData.level,
+              fee: modifyedData.fee,
+              image: modifyedData.image,
+              shortDescription: modifyedData.shortDescription
+            }
+          }
+           const result = await  myAddedCOursesCollection.updateOne(query, updateDocuments);
+           res.send(result)
+          
+        } catch (error) {
+          console.log(error, "server error in patchin time");
+        }
+      })
 
 
     // await client.db("admin").command({ ping: 1 });
