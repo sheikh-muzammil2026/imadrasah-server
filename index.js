@@ -11,7 +11,7 @@ app.use(cors())
 app.use(express.json())
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.send('iMadrasah Server is Running!');
 })
 
 
@@ -29,12 +29,13 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
     // Send a ping to confirm a successful connection
     const database = client.db("imadrasah");
     const coursesCollection = database.collection("courses");
     const enrolledCollection = database.collection("enrolled");
     const admissionCollection = database.collection("admissions");
+     const myAddedCOursesCollection = database.collection("addedCourses");
 
     app.get('/courses', async(req, res)=>{
         try {
@@ -58,18 +59,20 @@ async function run() {
         const course = await coursesCollection.findOne(query);
         res.json(course);
         } catch (error) {
-            console.log(error)
+           console.error("Error fetching courses:", error);
+           res.status(500).json({ message: "Internal Server Error" });
             
         }
     })
 
     app.post('/enrolled-courses',async (req, res) =>{
       try {
-        const enrolledCourses = await req.body;
+        const enrolledCourses = req.body;
         const result = await enrolledCollection.insertOne(enrolledCourses);
         res.json(result)
       } catch (error) {
         console.log(error, "enrolled post time catching error")
+        res.status(500).json({ message: "Internal Server Error" });
       }
     })
 
@@ -86,7 +89,8 @@ async function run() {
           res.json(enrolledCourses)
           
         } catch (error) {
-          console.log(error.message)
+         console.error("Error fetching enrolled-courses:", error);
+         res.status(500).json({ message: "Internal Server Error" });
         }
       })
 
@@ -98,13 +102,54 @@ async function run() {
           res.json(result)
           
         } catch (error) {
-          console.log(error)
+          console.error("Error fetching admissions:", error);
+          res.status(500).json({ message: "Internal Server Error" });
           
         }
       })
 
 
-    // await client.db("admin").command({ ping: 1 });
+      app.get('/admissions', async(req,res)=>{
+        try {
+
+          const cursor = await admissionCollection.find()
+          const result = await cursor.toArray()
+          res.json(result)
+          
+        } catch (error) {
+          console.error("Error fetching admissions:", error);
+          res.status(500).json({ message: "Internal Server Error" });
+          
+        }
+      })
+
+      app.post('/my-added-courses', async(req, res)=>{
+        try {
+          const coursesData = req.body;
+          const result = await myAddedCOursesCollection.insertOne(coursesData)
+          res.json(result)
+          
+        } catch (error) {
+          console.error("Error fetching my-added-courses:", error);
+          res.status(500).json({ message: "Internal Server Error" });
+        }
+      })
+
+      app.get('/my-added-courses/:userId', async(req, res)=>{
+        try {
+          const userId = req.params.userId;
+          const query = {userId: userId};
+          const cursor = await myAddedCOursesCollection.find(query);
+          const myAddedCourses = await cursor.toArray()
+          res.json(myAddedCourses);
+          
+        } catch (error) {
+          console.log(error);
+        }
+      })
+
+
+    await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
