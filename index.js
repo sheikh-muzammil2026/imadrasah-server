@@ -94,6 +94,19 @@ async function run() {
         }
       })
 
+       app.delete('/enrolled-courses/:courseId', async(req, res)=>{
+        try {
+          const courseId = req.params.courseId;
+          const query = {_id: new ObjectId(courseId) }
+          const result = await enrolledCollection.deleteOne(query)
+          res.json(result)
+          
+        } catch (error) {
+          console.log(error, "from deleting enrolled-courses");
+        }
+      })
+
+
       app.post('/admissions', async(req, res)=>{
         try {
 
@@ -148,17 +161,17 @@ async function run() {
         }
       })
 
-      app.delete('/enrolled-courses/:courseId', async(req, res)=>{
+      app.delete('/my-added-courses/:courseId', async(req, res)=>{
         try {
           const courseId = req.params.courseId;
-          const query = {_id: new ObjectId(courseId) }
-          const result = await enrolledCollection.deleteOne(query)
+          const query  = {_id: courseId};
+          const result = await myAddedCOursesCollection.deleteOne(query)
           res.json(result)
-          
         } catch (error) {
-          console.log(error, "from deleting enrolled-courses");
+          console.log(error);
         }
       })
+     
 
 
     // await client.db("admin").command({ ping: 1 });
