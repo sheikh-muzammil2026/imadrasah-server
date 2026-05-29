@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
     // Send a ping to confirm a successful connection
     const database = client.db("imadrasah");
     const coursesCollection = database.collection("courses");
@@ -106,6 +106,30 @@ async function run() {
         }
       })
 
+      app.patch('/enrolled-courses/:classId', async(req, res)=>{
+        try {
+          const classId = req.params.classId;
+          console.log(classId, "from server side, params id");
+          const query   = {_id: new ObjectId(classId)}
+          const modifiedData = req.body;
+          console.log(modifiedData)
+         const updateDocuments = {
+              $set: {
+                courseName: modifiedData.courseName,
+                teacherName: modifiedData.teacherName,
+                subject: modifiedData.subject,
+                classTime: modifiedData.classTime,
+                userEmail: modifiedData.userEmail
+              }
+            }
+          console.log(updateDocuments, "from update documents");
+          const result = await enrolledCollection.updateOne(query, updateDocuments)
+          res.json(result)
+          
+        } catch (error) {
+          console.log(error, "from server side on patching update data");
+        }
+      })
 
       app.post('/admissions', async(req, res)=>{
         try {
@@ -195,7 +219,7 @@ async function run() {
       })
 
 
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
