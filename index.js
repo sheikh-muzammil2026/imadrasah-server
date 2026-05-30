@@ -35,7 +35,7 @@ async function run() {
     const coursesCollection = database.collection("courses");
     const enrolledCollection = database.collection("enrolled");
     const admissionCollection = database.collection("admissions");
-    const myAddedCOursesCollection = database.collection("addedCourses");
+    // const myAddedCOursesCollection = database.collection("addedCourses");
 
     app.get('/courses', async(req, res)=>{
         try {
@@ -52,6 +52,12 @@ async function run() {
         }
     })
 
+    app.get('/available-courses', async(req, res)=>{
+      const cursor = await coursesCollection.find().limit(6);
+      const result = await cursor.toArray();
+      res.json(result);
+    })
+
     app.get('/courses/:id', async(req, res)=>{
         try {
         const id = req.params.id;
@@ -63,6 +69,32 @@ async function run() {
            res.status(500).json({ message: "Internal Server Error" });
             
         }
+    })
+
+    app.patch('/courses/:courseId', async(req, res)=>{
+      const courseId = req.params.courseId;
+      const query    = {_id: new ObjectId(courseId)}
+      const modifiedData = req.body;
+      const updatedDocuments = {
+        $set: {
+          title: modifiedData?.title,
+          teacher: modifiedData?.teacher,
+          subject: modifiedData?.subject,
+          schedule: modifiedData?.schedule,
+          fee: modifiedData?.fee,
+          seats: modifiedData?.seats,
+          duration: modifiedData?.duration,
+          level: modifiedData?.level,
+          image: modifiedData?.image,
+          shortDescription: modifiedData?.shortDescription,
+          fullDescription: modifiedData?.fullDescription,
+          requirements: modifiedData?.requirements,
+          specialNotes: modifiedData?.specialNotes  
+        }}
+
+        const result = await coursesCollection.updateOne(query, updatedDocuments);
+        res.json(result)
+
     })
 
     app.post('/enrolled-courses',async (req, res) =>{
@@ -122,7 +154,7 @@ async function run() {
                 userEmail: modifiedData.userEmail
               }
             }
-          console.log(updateDocuments, "from update documents");
+          
           const result = await enrolledCollection.updateOne(query, updateDocuments)
           res.json(result)
           
@@ -163,7 +195,7 @@ async function run() {
       app.post('/my-added-courses', async(req, res)=>{
         try {
           const coursesData = req.body;
-          const result = await myAddedCOursesCollection.insertOne(coursesData)
+          const result = await coursesCollection.insertOne(coursesData)
           res.json(result)
           
         } catch (error) {
@@ -176,7 +208,7 @@ async function run() {
         try {
           const userId = req.params.userId;
           const query = {userId: userId};
-          const cursor = await myAddedCOursesCollection.find(query);
+          const cursor = await coursesCollection.find(query);
           const myAddedCourses = await cursor.toArray()
           res.json(myAddedCourses);
           
@@ -189,7 +221,7 @@ async function run() {
         try {
           const courseId = req.params.courseId;
           const query  = {_id: courseId};
-          const result = await myAddedCOursesCollection.deleteOne(query)
+          const result = await coursesCollection.deleteOne(query)
           res.json(result)
         } catch (error) {
           console.log(error);
@@ -210,7 +242,7 @@ async function run() {
               shortDescription: modifyedData.shortDescription
             }
           }
-           const result = await  myAddedCOursesCollection.updateOne(query, updateDocuments);
+           const result = await  coursesCollection.updateOne(query, updateDocuments);
            res.send(result)
           
         } catch (error) {
@@ -222,7 +254,7 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
+    
     // await client.close();
   }
 }
@@ -233,10 +265,3 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
 
-
-/**
- * enrolled course dekhar jonno client side theke call korar somoy user id soho fetch korbe. 
- * server side e client theke asa use id reieve kore sei id er sathe mongodb er moddhe thakar use id milaabe.
- * mongodb userId and clien req er userId miliye ze data asbe, setai res.json() kore pathiye dibe. 
- * 
- * */ 
