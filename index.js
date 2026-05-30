@@ -184,7 +184,6 @@ async function run() {
         }
       })
 
-
       app.get('/admissions', async(req,res)=>{
         try {
 
@@ -197,6 +196,13 @@ async function run() {
           res.status(500).json({ message: "Internal Server Error" });
           
         }
+      })
+
+      app.delete('/admissions/:studentId', async(req, res)=> {
+        const studentId = req.params.studentId;
+        const query     = {_id: new ObjectId(studentId)};
+        const result    = await admissionCollection.deleteOne(query)
+        res.json(result);
       })
 
       app.post('/my-added-courses', async(req, res)=>{
