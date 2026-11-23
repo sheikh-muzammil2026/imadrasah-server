@@ -1,280 +1,62 @@
-const express = require('express')
-const app = express()
+const express = require("express");
+const cors = require("cors");
 const dotenv = require("dotenv");
-const cors = require("cors")
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { connectDB } = require("./src/config/db");
+
+// Import Routes
+const coursesRoutes = require("./src/routes/courses.routes");
+const ebooksRoutes = require("./src/routes/ebooks.routes");
+const testimonialsRoutes = require("./src/routes/testimonials.routes");
+const usersRoutes = require("./src/routes/users.routes");
+const authRoutes = require("./src/routes/auth.routes");
 
 dotenv.config();
-const port = process.env.PORT || 8000
 
-app.use(cors())
-app.use(express.json())
+const app = express();
+const port = process.env.PORT || 8000;
 
-app.get('/', (req, res) => {
-  res.send('iMadrasah Server is Running!');
-})
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-
-const uri = process.env.MONGODB_URI
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+// Root healthcheck
+app.get("/", (req, res) => {
+  res.send("Quran Kanon Online Madrasah API is Running!");
 });
 
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
-    // Send a ping to confirm a successful connection
-    const database = client.db("imadrasah");
-    const coursesCollection = database.collection("courses");
-    const enrolledCollection = database.collection("enrolled");
-    const admissionCollection = database.collection("admissions");
-    // const myAddedCOursesCollection = database.collection("addedCourses");
+// Modular Routes
+app.use("/api/courses", coursesRoutes);
+app.use("/api/ebooks", ebooksRoutes);
+app.use("/api/testimonials", testimonialsRoutes);
+app.use("/api/dashboard", usersRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/auth", authRoutes);
 
-    app.get('/courses', async(req, res)=>{
-        try {
-            const cursor = await coursesCollection.find();
-            const courses = await cursor.toArray();
-            res.send(courses);
-            
-        } catch (error) {
-            console.error("Error fetching courses:", error);
-             res.status(500).send({ 
-            success: false, 
-            message: "Internal Server Error. Could not fetch courses." 
-        });
-        }
-    })
+// Backwards-compatible aliases
+app.use("/courses", coursesRoutes);
+app.use("/available-courses", (req, res, next) => {
+  req.url = "/available";
+  coursesRoutes(req, res, next);
+});
+app.use("/enrolled-courses", (req, res, next) => {
+  // Aliases for legacy client calls
+  if (req.method === "POST") req.url = "/enroll";
+  if (req.method === "GET" && req.params && req.params.userId) req.url = `/enrolled/${req.params.userId}`;
+  coursesRoutes(req, res, next);
+});
 
-    app.get('/available-courses', async(req, res)=>{
-      const cursor = await coursesCollection.find().limit(6);
-      const result = await cursor.toArray();
-      res.json(result);
-    })
+// Initialize database and start server
+connectDB()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Quran Kanon Server listening on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB, starting server anyway...", err);
+    app.listen(port, () => {
+      console.log(`Quran Kanon Server listening on port ${port} (DB connecting in background)`);
+    });
+  });
 
-    app.get('/courses/:id', async(req, res)=>{
-        try {
-        const id = req.params.id;
-        const query = {_id: new ObjectId(id)};
-        const course = await coursesCollection.findOne(query);
-        res.json(course);
-        } catch (error) {
-           console.error("Error fetching courses:", error);
-           res.status(500).json({ message: "Internal Server Error" });
-            
-        }
-    })
-
-    app.patch('/courses/:courseId', async(req, res)=>{
-      const courseId = req.params.courseId;
-      const query    = {_id: new ObjectId(courseId)}
-      const modifiedData = req.body;
-      const updatedDocuments = {
-        $set: {
-          title: modifiedData?.title,
-          teacher: modifiedData?.teacher,
-          subject: modifiedData?.subject,
-          schedule: modifiedData?.schedule,
-          fee: modifiedData?.fee,
-          seats: modifiedData?.seats,
-          duration: modifiedData?.duration,
-          level: modifiedData?.level,
-          image: modifiedData?.image,
-          shortDescription: modifiedData?.shortDescription,
-          fullDescription: modifiedData?.fullDescription,
-          requirements: modifiedData?.requirements,
-          specialNotes: modifiedData?.specialNotes  
-        }}
-
-        const result = await coursesCollection.updateOne(query, updatedDocuments);
-        res.json(result)
-
-    })
-
-    app.delete('/courses/:courseId', async(req, res)=>{
-      const courseId = req.params.courseId;
-      const query    = {_id: new ObjectId(courseId)};
-      const result   = await coursesCollection.deleteOne(query);
-      res.json(result);
-    })
-
-    app.post('/enrolled-courses',async (req, res) =>{
-      try {
-        const enrolledCourses = req.body;
-        const result = await enrolledCollection.insertOne(enrolledCourses);
-        res.json(result)
-      } catch (error) {
-        console.log(error, "enrolled post time catching error")
-        res.status(500).json({ message: "Internal Server Error" });
-      }
-    })
-
-      app.get('/enrolled-courses/:userId', async(req, res)=>{
-        try {
-          const userId = req.params.userId;
-          const query = {userId: userId}
-//                         ▲        ▲
-//                         │        │
-//                 ডাটাবেজের ফিল্ডের নাম     প্যারামস থেকে পাওয়া ভ্যারিয়েবলের মান
-
-          const cursor = await enrolledCollection.find(query)
-          const enrolledCourses = await cursor.toArray()
-          res.json(enrolledCourses)
-          
-        } catch (error) {
-         console.error("Error fetching enrolled-courses:", error);
-         res.status(500).json({ message: "Internal Server Error" });
-        }
-      })
-
-       app.delete('/enrolled-courses/:courseId', async(req, res)=>{
-        try {
-          const courseId = req.params.courseId;
-          const query = {_id: new ObjectId(courseId) }
-          const result = await enrolledCollection.deleteOne(query)
-          res.json(result)
-          
-        } catch (error) {
-          console.log(error, "from deleting enrolled-courses");
-        }
-      })
-
-      app.patch('/enrolled-courses/:classId', async(req, res)=>{
-        try {
-          const classId = req.params.classId;
-          console.log(classId, "from server side, params id");
-          const query   = {_id: new ObjectId(classId)}
-          const modifiedData = req.body;
-          console.log(modifiedData)
-         const updateDocuments = {
-              $set: {
-                courseName: modifiedData.courseName,
-                teacherName: modifiedData.teacherName,
-                subject: modifiedData.subject,
-                classTime: modifiedData.classTime,
-                userEmail: modifiedData.userEmail
-              }
-            }
-          
-          const result = await enrolledCollection.updateOne(query, updateDocuments)
-          res.json(result)
-          
-        } catch (error) {
-          console.log(error, "from server side on patching update data");
-        }
-      })
-
-      app.post('/admissions', async(req, res)=>{
-        try {
-
-          const admitedData = req.body;
-          const result = await admissionCollection.insertOne(admitedData);
-          res.json(result)
-          
-        } catch (error) {
-          console.error("Error fetching admissions:", error);
-          res.status(500).json({ message: "Internal Server Error" });
-          
-        }
-      })
-
-      app.get('/admissions', async(req,res)=>{
-        try {
-
-          const cursor = await admissionCollection.find()
-          const result = await cursor.toArray()
-          res.json(result)
-          
-        } catch (error) {
-          console.error("Error fetching admissions:", error);
-          res.status(500).json({ message: "Internal Server Error" });
-          
-        }
-      })
-
-      app.delete('/admissions/:studentId', async(req, res)=> {
-        const studentId = req.params.studentId;
-        const query     = {_id: new ObjectId(studentId)};
-        const result    = await admissionCollection.deleteOne(query)
-        res.json(result);
-      })
-
-      app.post('/my-added-courses', async(req, res)=>{
-        try {
-          const coursesData = req.body;
-          const result = await coursesCollection.insertOne(coursesData)
-          res.json(result)
-          
-        } catch (error) {
-          console.error("Error fetching my-added-courses:", error);
-          res.status(500).json({ message: "Internal Server Error" });
-        }
-      })
-
-      app.get('/my-added-courses/:userId', async(req, res)=>{
-        try {
-          const userId = req.params.userId;
-          const query = {userId: userId};
-          const cursor = await coursesCollection.find(query);
-          const myAddedCourses = await cursor.toArray()
-          res.json(myAddedCourses);
-          
-        } catch (error) {
-          console.log(error);
-        }
-      })
-
-      app.delete('/my-added-courses/:courseId', async(req, res)=>{
-        try {
-          const courseId = req.params.courseId;
-          const query  = {_id: courseId};
-          const result = await coursesCollection.deleteOne(query)
-          res.json(result)
-        } catch (error) {
-          console.log(error);
-        }
-      })
-     
-      app.patch('/my-added-courses/:courseId', async(req, res) =>{
-        try {
-          const courseId = req.params.courseId;
-          const query = {_id: new ObjectId(courseId)}
-          const modifyedData = req.body;
-          const updateDocuments = {
-            $set: {
-              title: modifyedData.title,
-              level: modifyedData.level,
-              fee: modifyedData.fee,
-              image: modifyedData.image,
-              shortDescription: modifyedData.shortDescription
-            }
-          }
-           const result = await  coursesCollection.updateOne(query, updateDocuments);
-           res.send(result)
-          
-        } catch (error) {
-          console.log(error, "server error in patchin time");
-        }
-      })
-
-
-    // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    
-    // await client.close();
-  }
-}
-run().catch(console.dir);
-
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
-
+module.exports = app;
