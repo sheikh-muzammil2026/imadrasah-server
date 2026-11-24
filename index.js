@@ -1,6 +1,9 @@
+const path = require("path");
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const { connectDB } = require("./src/config/db");
 
 // Import Routes
@@ -9,8 +12,6 @@ const ebooksRoutes = require("./src/routes/ebooks.routes");
 const testimonialsRoutes = require("./src/routes/testimonials.routes");
 const usersRoutes = require("./src/routes/users.routes");
 const authRoutes = require("./src/routes/auth.routes");
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -39,9 +40,7 @@ app.use("/available-courses", (req, res, next) => {
   coursesRoutes(req, res, next);
 });
 app.use("/enrolled-courses", (req, res, next) => {
-  // Aliases for legacy client calls
   if (req.method === "POST") req.url = "/enroll";
-  if (req.method === "GET" && req.params && req.params.userId) req.url = `/enrolled/${req.params.userId}`;
   coursesRoutes(req, res, next);
 });
 
