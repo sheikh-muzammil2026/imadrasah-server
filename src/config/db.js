@@ -51,4 +51,6 @@ module.exports = {
   getEbooksCollection: () => getDB().collection("ebooks"),
   getTestimonialsCollection: () => getDB().collection("testimonials"),
   getUsersCollection: () => getDB().collection("user"),
+  getTeacherApplicationsCollection: () => getDB().collection("teacher_applications"),
+  getCourseEnrollmentsCollection: () => getDB().collection("course_enrollments"),
 };

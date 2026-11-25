@@ -12,6 +12,8 @@ const ebooksRoutes = require("./src/routes/ebooks.routes");
 const testimonialsRoutes = require("./src/routes/testimonials.routes");
 const usersRoutes = require("./src/routes/users.routes");
 const authRoutes = require("./src/routes/auth.routes");
+const teacherApplicationsRoutes = require("./src/routes/teacherApplications.routes");
+const courseEnrollmentsRoutes = require("./src/routes/courseEnrollments.routes");
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -32,6 +34,8 @@ app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/dashboard", usersRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/teacher-applications", teacherApplicationsRoutes);
+app.use("/api/course-enrollments", courseEnrollmentsRoutes);
 
 // Backwards-compatible aliases
 app.use("/courses", coursesRoutes);
