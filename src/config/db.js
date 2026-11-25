@@ -50,7 +50,7 @@ module.exports = {
   getEnrolledCollection: () => getDB().collection("enrolled"),
   getEbooksCollection: () => getDB().collection("ebooks"),
   getTestimonialsCollection: () => getDB().collection("testimonials"),
-  getUsersCollection: () => getDB().collection("user"),
+  getUsersCollection: () => getDB().collection("users"),
   getTeacherApplicationsCollection: () => getDB().collection("teacher_applications"),
   getCourseEnrollmentsCollection: () => getDB().collection("course_enrollments"),
 };
