@@ -53,4 +53,8 @@ module.exports = {
   getUsersCollection: () => getDB().collection("users"),
   getTeacherApplicationsCollection: () => getDB().collection("teacher_applications"),
   getCourseEnrollmentsCollection: () => getDB().collection("course_enrollments"),
+  getAuditLogsCollection: () => getDB().collection("audit_logs"),
+  getAttendanceCollection: () => getDB().collection("attendance_records"),
+  getAssignmentsCollection: () => getDB().collection("assignments"),
+  getSubmissionsCollection: () => getDB().collection("submissions"),
 };

@@ -3,6 +3,7 @@ const {
   getCourseEnrollmentsCollection,
   getUsersCollection,
 } = require("../config/db");
+const { recordAuditLog } = require("../services/auditLog.service");
 
 /**
  * Generate sequential unique Student ID starting from "0401"
@@ -244,6 +245,23 @@ async function approveEnrollment(req, res) {
       });
     }
 
+    // 3. Record audit log
+    await recordAuditLog({
+      actor: req.user,
+      action: "COURSE_ENROLLMENT_APPROVED",
+      target: {
+        type: "course_enrollment",
+        id: enrollment._id.toString(),
+        name: `${enrollment.userName} - ${enrollment.courseTitle}`,
+      },
+      details: {
+        studentId,
+        courseSlug: enrollment.courseSlug,
+        userEmail: enrollment.userEmail,
+      },
+      ip: req.ip,
+    });
+
     res.json({
       success: true,
       message: `কোর্সে ভর্তি আবেদন সফলভাবে অনুমোদিত হয়েছে। শিক্ষার্থী আইডি: ${studentId}`,
@@ -281,6 +299,20 @@ async function rejectEnrollment(req, res) {
     if (result.matchedCount === 0) {
       return res.status(404).json({ success: false, message: "আবেদনটি খুঁজে পাওয়া যায়নি।" });
     }
+
+    // Record audit log
+    await recordAuditLog({
+      actor: req.user,
+      action: "COURSE_ENROLLMENT_REJECTED",
+      target: {
+        type: "course_enrollment",
+        id: id,
+      },
+      details: {
+        reason: feedbackNote,
+      },
+      ip: req.ip,
+    });
 
     res.json({
       success: true,

@@ -4,6 +4,7 @@ const {
   getUsersCollection,
   getDB,
 } = require("../config/db");
+const { recordAuditLog } = require("../services/auditLog.service");
 
 /**
  * Generate sequential unique Teacher ID starting from "0203"
@@ -220,6 +221,23 @@ async function approveApplication(req, res) {
       });
     }
 
+    // 3. Record audit log
+    await recordAuditLog({
+      actor: req.user,
+      action: "TEACHER_APPLICATION_APPROVED",
+      target: {
+        type: "teacher_application",
+        id: application._id.toString(),
+        name: `${application.name} (${application.department})`,
+      },
+      details: {
+        teacherId,
+        email: application.email,
+        phone: application.phone,
+      },
+      ip: req.ip,
+    });
+
     res.json({
       success: true,
       message: `শিক্ষক আবেদন সফলভাবে অনুমোদিত হয়েছে। আইডি: ${teacherId}`,
@@ -237,24 +255,46 @@ async function rejectApplication(req, res) {
   try {
     const applicationsCollection = getTeacherApplicationsCollection();
     const { id } = req.params;
+    const { rejectionReason, feedback } = req.body || {};
+    const reason = rejectionReason || feedback || "অভিজ্ঞতা বা যোগ্যতার শর্ত পূরণ না হওয়ায়";
 
     const query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { _id: id };
-    const result = await applicationsCollection.updateOne(query, {
+    const application = await applicationsCollection.findOne(query);
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: "আবেদনটি খুঁজে পাওয়া যায়নি।" });
+    }
+
+    await applicationsCollection.updateOne(query, {
       $set: {
         status: "rejected",
+        rejectionReason: reason,
         rejectedAt: new Date(),
         updatedAt: new Date(),
       },
     });
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ success: false, message: "আবেদনটি খুঁজে পাওয়া যায়নি।" });
-    }
+    // Record audit log
+    await recordAuditLog({
+      actor: req.user,
+      action: "TEACHER_APPLICATION_REJECTED",
+      target: {
+        type: "teacher_application",
+        id: application._id.toString(),
+        name: application.name,
+      },
+      details: {
+        reason,
+        email: application.email,
+      },
+      ip: req.ip,
+    });
 
     res.json({
       success: true,
-      message: "আবেদনটি বাতিল করা হয়েছে।",
+      message: "শিক্ষক নিয়োগ আবেদনটি কারণসহ বাতিল করা হয়েছে।",
       status: "rejected",
+      rejectionReason: reason,
     });
   } catch (error) {
     console.error("Error rejecting application:", error);

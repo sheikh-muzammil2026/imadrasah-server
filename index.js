@@ -14,6 +14,7 @@ const usersRoutes = require("./src/routes/users.routes");
 const authRoutes = require("./src/routes/auth.routes");
 const teacherApplicationsRoutes = require("./src/routes/teacherApplications.routes");
 const courseEnrollmentsRoutes = require("./src/routes/courseEnrollments.routes");
+const teacherRoutes = require("./src/routes/teacher.routes");
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -36,6 +37,8 @@ app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/teacher-applications", teacherApplicationsRoutes);
 app.use("/api/course-enrollments", courseEnrollmentsRoutes);
+app.use("/api/teacher", teacherRoutes);
+app.use("/api/attendance", teacherRoutes);
 
 // Backwards-compatible aliases
 app.use("/courses", coursesRoutes);
